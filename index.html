@@ -1,13 +1,1046 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="refresh" content="0;url=https://apparatus-geometry-ampland-external.trycloudflare.com">
-<title>鑿囨埧閲囨敹宸ュ叿</title>
-<style>body{font-family:Arial,sans-serif;text-align:center;padding:50px;color:#333}</style>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>菇房采收产量录入工具</title>
+<!-- PWA 支持 -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#185fa5">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="菇房工具">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+  background: #f5f5f0;
+  color: #2c2c2a;
+  min-height: 100vh;
+  font-size: 14px;
+}
+.header {
+  background: #fff;
+  border-bottom: 0.5px solid #e0ddd6;
+  padding: 16px 20px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+.header h1 { font-size: 17px; font-weight: 500; color: #2c2c2a; }
+.header p { font-size: 12px; color: #888780; margin-top: 2px; }
+.container { max-width: 860px; margin: 0 auto; padding: 20px 16px 60px; }
+
+/* Steps indicator */
+.steps {
+  display: flex;
+  gap: 0;
+  margin-bottom: 24px;
+  background: #fff;
+  border-radius: 10px;
+  border: 0.5px solid #e0ddd6;
+  overflow: hidden;
+}
+.step {
+  flex: 1;
+  padding: 10px 8px;
+  text-align: center;
+  font-size: 12px;
+  color: #888780;
+  border-right: 0.5px solid #e0ddd6;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.step:last-child { border-right: none; }
+.step.active { background: #e6f1fb; color: #185fa5; font-weight: 500; }
+.step.done { background: #eaf3de; color: #3b6d11; }
+.step .num { display: block; font-size: 15px; font-weight: 500; margin-bottom: 2px; }
+
+/* Section card */
+.card {
+  background: #fff;
+  border-radius: 12px;
+  border: 0.5px solid #e0ddd6;
+  padding: 20px;
+  margin-bottom: 16px;
+}
+.card-title {
+  font-size: 14px;
+  font-weight: 500;
+  margin-bottom: 16px;
+  color: #2c2c2a;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.badge {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 100px;
+  font-weight: 400;
+}
+.badge-blue { background: #e6f1fb; color: #185fa5; }
+.badge-green { background: #eaf3de; color: #3b6d11; }
+.badge-orange { background: #faeeda; color: #854f0b; }
+
+/* Upload area */
+.upload-area {
+  border: 1.5px dashed #b4b2a9;
+  border-radius: 10px;
+  padding: 32px 20px;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+  position: relative;
+}
+.upload-area:hover { border-color: #378add; background: #f6faff; }
+.upload-area.dragover { border-color: #378add; background: #e6f1fb; }
+.upload-area input[type=file] {
+  position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
+}
+.upload-icon {
+  width: 48px; height: 48px;
+  background: #e6f1fb;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  margin: 0 auto 12px;
+  font-size: 22px;
+}
+.upload-area p { color: #5f5e5a; font-size: 13px; }
+.upload-area .hint { font-size: 12px; color: #888780; margin-top: 6px; }
+
+/* Preview image */
+.img-preview {
+  width: 100%;
+  max-height: 340px;
+  object-fit: contain;
+  border-radius: 8px;
+  border: 0.5px solid #e0ddd6;
+  display: none;
+}
+.img-preview.show { display: block; }
+
+/* API key input */
+.field-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+.field-row label { font-size: 13px; color: #5f5e5a; }
+.field-row input, .field-row select, .field-row textarea {
+  border: 0.5px solid #d3d1c7;
+  border-radius: 8px;
+  padding: 9px 12px;
+  font-size: 13px;
+  font-family: inherit;
+  color: #2c2c2a;
+  background: #fff;
+  width: 100%;
+  outline: none;
+  transition: border-color 0.15s;
+}
+.field-row input:focus, .field-row select:focus, .field-row textarea:focus {
+  border-color: #378add;
+}
+.field-row textarea { min-height: 80px; resize: vertical; }
+
+/* Recognize button */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  border: 0.5px solid transparent;
+  transition: opacity 0.15s;
+  font-family: inherit;
+}
+.btn:hover { opacity: 0.85; }
+.btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.btn-primary { background: #185fa5; color: #fff; border-color: #185fa5; width: 100%; }
+.btn-green { background: #3b6d11; color: #fff; border-color: #3b6d11; width: 100%; }
+.btn-outline { background: #fff; color: #2c2c2a; border-color: #d3d1c7; }
+.btn-sm { padding: 6px 14px; font-size: 12px; }
+
+/* Loading spinner */
+.spinner {
+  width: 18px; height: 18px;
+  border: 2px solid rgba(255,255,255,0.4);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  display: none;
+}
+.spinner.show { display: inline-block; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* OCR result table */
+.result-section { display: none; }
+.result-section.show { display: block; }
+
+.data-grid {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.data-grid th {
+  background: #f1efe8;
+  padding: 8px 10px;
+  text-align: left;
+  font-weight: 500;
+  font-size: 12px;
+  color: #5f5e5a;
+  border-bottom: 0.5px solid #d3d1c7;
+}
+.data-grid td {
+  padding: 6px 10px;
+  border-bottom: 0.5px solid #f1efe8;
+  vertical-align: middle;
+}
+.data-grid tr:last-child td { border-bottom: none; }
+.data-grid input[type=number], .data-grid input[type=text] {
+  border: 0.5px solid #d3d1c7;
+  border-radius: 6px;
+  padding: 5px 8px;
+  font-size: 12px;
+  font-family: inherit;
+  width: 90px;
+  color: #2c2c2a;
+  background: #fff;
+  outline: none;
+}
+.data-grid input:focus { border-color: #378add; }
+.data-grid .row-label {
+  font-size: 12px;
+  color: #5f5e5a;
+  white-space: nowrap;
+}
+
+/* Summary row */
+.summary-bar {
+  background: #e6f1fb;
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin-top: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: center;
+}
+.summary-item { font-size: 13px; color: #2c2c2a; }
+.summary-item strong { color: #185fa5; font-weight: 500; }
+
+/* Info box */
+.info-box {
+  background: #faeeda;
+  border-radius: 8px;
+  padding: 12px 14px;
+  font-size: 12px;
+  color: #633806;
+  line-height: 1.6;
+  margin-bottom: 14px;
+}
+.info-box.green { background: #eaf3de; color: #27500a; }
+.info-box.red { background: #fcebeb; color: #501313; }
+
+/* Progress bar */
+.progress-wrap { margin: 12px 0; }
+.progress-bar-bg {
+  height: 6px;
+  background: #e0ddd6;
+  border-radius: 100px;
+  overflow: hidden;
+}
+.progress-bar-fill {
+  height: 100%;
+  background: #378add;
+  border-radius: 100px;
+  transition: width 0.4s;
+  width: 0%;
+}
+.progress-text { font-size: 12px; color: #5f5e5a; margin-top: 6px; }
+
+/* Excel mapping */
+.mapping-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.mapping-table th, .mapping-table td {
+  padding: 6px 10px;
+  border: 0.5px solid #e0ddd6;
+  text-align: left;
+}
+.mapping-table th { background: #f1efe8; font-weight: 500; }
+.mapping-table .col-excel { color: #185fa5; font-weight: 500; }
+
+/* Mobile optimized */
+@media (max-width: 600px) {
+  .steps .step span { font-size: 10px; }
+  .data-grid input { width: 70px; }
+}
+
+/* Section visibility */
+.panel { display: none; }
+.panel.active { display: block; }
+</style>
 </head>
 <body>
-<p style="font-size:18px">姝ｅ湪璺宠浆鍒拌弴鎴块噰鏀跺綍鍏ュ伐鍏?..</p>
-<p>濡傛灉娌℃湁鑷姩璺宠浆锛岃鐐瑰嚮锛?a href="https://apparatus-geometry-ampland-external.trycloudflare.com">鑿囨埧閲囨敹宸ュ叿</a></p>
+
+<div class="header">
+  <h1>菇房采收产量录入工具</h1>
+  <p>拍照上传纸质采收记录表 → AI自动识别 → 一键写入汇总Excel</p>
+</div>
+
+
+<!-- 安装提示横幅 -->
+<div id="install-banner" style="display:none;align-items:center;justify-content:space-between;background:#185fa5;color:#fff;padding:10px 16px;font-size:13px;gap:12px;position:sticky;top:56px;z-index:99;">
+  <span>📱 添加到手机桌面，像App一样使用</span>
+  <div style="display:flex;gap:8px;flex-shrink:0;">
+    <button onclick="installApp()" style="background:#fff;color:#185fa5;border:none;border-radius:6px;padding:5px 12px;font-size:12px;font-weight:500;cursor:pointer;">安装</button>
+    <button onclick="document.getElementById('install-banner').style.display='none'" style="background:rgba(255,255,255,0.2);color:#fff;border:none;border-radius:6px;padding:5px 10px;font-size:12px;cursor:pointer;">×</button>
+  </div>
+</div><div class="container">
+  <!-- Step indicator -->
+  <div class="steps">
+    <div class="step active" id="step1" onclick="goStep(1)">
+      <span class="num">①</span>
+      <span>上传照片</span>
+    </div>
+    <div class="step" id="step2" onclick="goStep(2)">
+      <span class="num">②</span>
+      <span>AI识别</span>
+    </div>
+    <div class="step" id="step3" onclick="goStep(3)">
+      <span class="num">③</span>
+      <span>校对数据</span>
+    </div>
+    <div class="step" id="step4" onclick="goStep(4)">
+      <span class="num">④</span>
+      <span>写入Excel</span>
+    </div>
+  </div>
+
+  <!-- Panel 1: Upload -->
+  <div class="panel active" id="panel1">
+    <div class="card">
+      <div class="card-title">上传纸质产量表照片 <span class="badge badge-blue">支持多张</span></div>
+      <div class="upload-area" id="uploadArea">
+        <input type="file" id="fileInput" accept="image/*" multiple onchange="handleFiles(this.files)">
+        <div class="upload-icon">📷</div>
+        <p>点击选择照片，或直接拖入</p>
+        <p class="hint">支持 JPG、PNG；建议拍摄清晰、光线均匀</p>
+      </div>
+      <div id="thumbRow" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">API 配置 <span class="badge badge-orange">首次需填写</span></div>
+      <div class="info-box">
+        本工具使用<strong>阿里云百炼 DashScope</strong>识别图片中的表格数据。首次需填写 API Key，之后浏览器自动记住。
+      </div>
+      <div class="info-box green">
+        <strong>如果你还没有 API Key：</strong><br>
+        打开 <a href="https://bailian.console.aliyun.com/" target="_blank">阿里云百炼控制台</a> → 手机号/支付宝注册 → 
+        左侧菜单「模型广场」开通 qwen-vl-plus → 左侧「API-KEY管理」创建 Key，复制过来即可。<br>
+        <small>新用户赠送 Token 额度，足够日常使用。</small>
+      </div>
+      <div class="field-row">
+        <label>API 地址（已自动填好）</label>
+        <input type="text" id="apiBase" value="https://dashscope.aliyuncs.com/compatible-mode/v1">
+      </div>
+      <div class="field-row">
+        <label>阿里云百炼 API Key</label>
+        <input type="password" id="apiKey" placeholder="sk-..." value="">
+      </div>
+      <div class="field-row">
+        <label>模型</label>
+        <select id="modelName">
+          <option value="qwen-vl-plus">qwen-vl-plus（推荐，识别准）</option>
+          <option value="qwen-vl-max">qwen-vl-max（最强，稍慢）</option>
+        </select>
+      </div>
+    </div>
+
+    <button class="btn btn-primary" onclick="startRecognize()" id="recognizeBtn">
+      <span class="spinner" id="spinner1"></span>
+      开始AI识别 →
+    </button>
+  </div>
+
+  <!-- Panel 2: Recognizing -->
+  <div class="panel" id="panel2">
+    <div class="card">
+      <div class="card-title">正在识别中...</div>
+      <div class="progress-wrap">
+        <div class="progress-bar-bg">
+          <div class="progress-bar-fill" id="progressBar"></div>
+        </div>
+        <div class="progress-text" id="progressText">初始化...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Panel 3: Review data -->
+  <div class="panel" id="panel3">
+    <div class="card">
+      <div class="card-title">识别结果 — 请核对后确认 <span class="badge badge-orange">可手动修改</span></div>
+      <div class="info-box green" id="recognizeInfo">识别完成，请检查各字段是否正确，可直接点击数值修改。</div>
+
+      <!-- Header info -->
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:16px;">
+        <div class="field-row">
+          <label>菇房号</label>
+          <input type="text" id="f_room" placeholder="如 B4-19">
+        </div>
+        <div class="field-row">
+          <label>覆土日期</label>
+          <input type="text" id="f_cover_date" placeholder="如 5.20">
+        </div>
+        <div class="field-row">
+          <label>出菇技术员</label>
+          <input type="text" id="f_tech" placeholder="技术员姓名">
+        </div>
+      </div>
+
+      <!-- Batch data table -->
+      <div id="batchTableWrap" style="overflow-x:auto;">
+        <table class="data-grid" id="batchTable">
+          <thead>
+            <tr>
+              <th>采收日期</th>
+              <th>B级 kg</th>
+              <th>C级 kg<br><small style="font-weight:400">(30-60g)</small></th>
+              <th>碰碎 kg</th>
+              <th>过熟 kg</th>
+              <th>D级 kg<br><small style="font-weight:400">(&lt;30g)</small></th>
+              <th>筐数</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody id="batchBody"></tbody>
+        </table>
+      </div>
+      <button class="btn btn-outline btn-sm" onclick="addBatchRow()" style="margin-top:10px;">＋ 添加一行</button>
+
+      <!-- Summary -->
+      <div class="summary-bar" id="summaryBar">
+        <div class="summary-item">B级合计：<strong id="sum_B">—</strong> kg</div>
+        <div class="summary-item">C级合计：<strong id="sum_C">—</strong> kg</div>
+        <div class="summary-item">碰碎+过熟：<strong id="sum_broken">—</strong> kg</div>
+        <div class="summary-item">D级合计：<strong id="sum_D">—</strong> kg</div>
+        <div class="summary-item" style="margin-left:auto;">
+          <strong style="font-size:16px;color:#2c2c2a;">总产量：<span id="sum_total" style="color:#185fa5;">— kg</span></strong>
+        </div>
+      </div>
+    </div>
+
+    <!-- Additional fields -->
+    <div class="card">
+      <div class="card-title">补充信息（写入汇总表用）</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <div class="field-row">
+          <label>收尾日期</label>
+          <input type="text" id="f_end_date" placeholder="如 6.14">
+        </div>
+        <div class="field-row">
+          <label>A级 kg（80g以上）</label>
+          <input type="number" id="f_A" placeholder="0" step="0.01" min="0">
+        </div>
+        <div class="field-row">
+          <label>污染率 %</label>
+          <input type="number" id="f_pollution" placeholder="0.00" step="0.01" min="0">
+        </div>
+        <div class="field-row">
+          <label>含水量 %</label>
+          <input type="number" id="f_moisture" placeholder="89.5" step="0.1" min="0">
+        </div>
+        <div class="field-row">
+          <label>螨虫/捡出瓶数</label>
+          <input type="text" id="f_mite" placeholder="如 有/32瓶">
+        </div>
+        <div class="field-row">
+          <label>备注</label>
+          <input type="text" id="f_remark" placeholder="">
+        </div>
+      </div>
+    </div>
+
+    <button class="btn btn-primary" onclick="goStep(4)">确认数据，下一步 →</button>
+  </div>
+
+  <!-- Panel 4: Write to Excel -->
+  <div class="panel" id="panel4">
+    <div class="card">
+      <div class="card-title">写入汇总 Excel</div>
+      <div class="info-box">
+        选择目标月份和行号，工具将把识别到的数据填入对应位置，并自动计算总产量、各级占比。
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <div class="field-row">
+          <label>汇总 Excel 文件</label>
+          <input type="file" id="excelInput" accept=".xlsx" onchange="loadExcel(this)">
+        </div>
+        <div class="field-row">
+          <label>目标月份（Sheet）</label>
+          <select id="sheetSelect">
+            <option value="1月份">1月份</option>
+            <option value="2月份">2月份</option>
+            <option value="3月份">3月份</option>
+            <option value="4月份">4月份</option>
+            <option value="5月份">5月份</option>
+            <option value="6月份" selected>6月份</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Column mapping reference -->
+      <details style="margin-top:8px;margin-bottom:16px;">
+        <summary style="font-size:12px;color:#5f5e5a;cursor:pointer;">查看字段对应关系（列映射）</summary>
+        <table class="mapping-table" style="margin-top:8px;">
+          <tr><th>字段</th><th class="col-excel">汇总表列</th><th>说明</th></tr>
+          <tr><td>覆土日期</td><td class="col-excel">B列</td><td>如 5.17</td></tr>
+          <tr><td>菇房号</td><td class="col-excel">C列</td><td>如 B4-14</td></tr>
+          <tr><td>收尾日期</td><td class="col-excel">I列</td><td>如 6.1</td></tr>
+          <tr><td>总产量 kg</td><td class="col-excel">J列</td><td>各级之和（自动计算）</td></tr>
+          <tr><td>A级 kg</td><td class="col-excel">N列</td><td>80g以上</td></tr>
+          <tr><td>B级 kg</td><td class="col-excel">P列</td><td>60-80g</td></tr>
+          <tr><td>C级 kg</td><td class="col-excel">R列</td><td>40-60g（纸质表30-60g）</td></tr>
+          <tr><td>碰碎+过熟 kg</td><td class="col-excel">T列</td><td>合并计入</td></tr>
+          <tr><td>40g以下 kg</td><td class="col-excel">U列</td><td>D级</td></tr>
+          <tr><td>含水量 %</td><td class="col-excel">AA列</td><td></td></tr>
+          <tr><td>螨虫/捡出瓶数</td><td class="col-excel">AB列</td><td></td></tr>
+          <tr><td>备注</td><td class="col-excel">AC列</td><td></td></tr>
+        </table>
+      </details>
+
+      <!-- Data preview -->
+      <div id="writePreview" style="display:none;">
+        <div class="card-title" style="margin-bottom:8px;">待写入数据预览</div>
+        <table class="data-grid" id="previewTable">
+          <thead><tr><th>字段</th><th>值</th><th>对应列</th></tr></thead>
+          <tbody id="previewBody"></tbody>
+        </table>
+      </div>
+
+      <div id="writeResult" style="display:none;margin-top:12px;"></div>
+
+      <div style="display:flex;gap:10px;margin-top:16px;">
+        <button class="btn btn-outline" onclick="goStep(3)" style="flex:1;">← 返回修改</button>
+        <button class="btn btn-green" onclick="generateExcel()" id="writeBtn" style="flex:2;">
+          <span class="spinner" id="spinner4"></span>
+          生成/更新 Excel 文件
+        </button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- SheetJS CDN -->
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+<script>
+// ─── State ────────────────────────────────────────────────────────────────────
+let uploadedFiles = [];
+let recognizedData = null;
+let excelWorkbook = null;
+let currentStep = 1;
+
+// ─── Storage helpers ──────────────────────────────────────────────────────────
+function saveConfig() {
+  localStorage.setItem('mushroom_api_base', document.getElementById('apiBase').value);
+  localStorage.setItem('mushroom_api_key', document.getElementById('apiKey').value);
+  localStorage.setItem('mushroom_model', document.getElementById('modelName').value);
+}
+function loadConfig() {
+  const base = localStorage.getItem('mushroom_api_base');
+  const key  = localStorage.getItem('mushroom_api_key');
+  const model = localStorage.getItem('mushroom_model');
+  if (base)  document.getElementById('apiBase').value  = base;
+  if (key)   document.getElementById('apiKey').value   = key;
+  if (model) document.getElementById('modelName').value = model;
+}
+loadConfig();
+
+// ─── Step navigation ──────────────────────────────────────────────────────────
+function goStep(n) {
+  if (n > currentStep + 1) return;
+  currentStep = n;
+  document.querySelectorAll('.panel').forEach((p, i) => {
+    p.classList.toggle('active', i + 1 === n);
+  });
+  document.querySelectorAll('.step').forEach((s, i) => {
+    s.classList.remove('active', 'done');
+    if (i + 1 === n) s.classList.add('active');
+    if (i + 1 < n)  s.classList.add('done');
+  });
+  window.scrollTo(0, 0);
+}
+
+// ─── File upload ──────────────────────────────────────────────────────────────
+const uploadArea = document.getElementById('uploadArea');
+uploadArea.addEventListener('dragover', e => { e.preventDefault(); uploadArea.classList.add('dragover'); });
+uploadArea.addEventListener('dragleave', () => uploadArea.classList.remove('dragover'));
+uploadArea.addEventListener('drop', e => {
+  e.preventDefault();
+  uploadArea.classList.remove('dragover');
+  handleFiles(e.dataTransfer.files);
+});
+
+function handleFiles(files) {
+  uploadedFiles = [...files];
+  const row = document.getElementById('thumbRow');
+  row.innerHTML = '';
+  uploadedFiles.forEach((f, i) => {
+    const url = URL.createObjectURL(f);
+    const img = document.createElement('img');
+    img.src = url;
+    img.style.cssText = 'height:80px;border-radius:6px;border:0.5px solid #e0ddd6;object-fit:cover;';
+    row.appendChild(img);
+  });
+}
+
+// ─── AI Recognition ───────────────────────────────────────────────────────────
+async function startRecognize() {
+  if (uploadedFiles.length === 0) {
+    alert('请先上传纸质产量表的照片！');
+    return;
+  }
+  saveConfig();
+  const apiBase = document.getElementById('apiBase').value.trim().replace(/\/$/, '');
+  const apiKey  = document.getElementById('apiKey').value.trim();
+  const model   = document.getElementById('modelName').value;
+
+  if (!apiKey) {
+    alert('请填写 API Key！');
+    return;
+  }
+
+  const btn = document.getElementById('recognizeBtn');
+  const sp  = document.getElementById('spinner1');
+  btn.disabled = true;
+  sp.classList.add('show');
+
+  goStep(2);
+  updateProgress(10, '正在读取图片...');
+
+  try {
+    // Convert first image to base64
+    const file = uploadedFiles[0];
+    const base64 = await fileToBase64(file);
+    updateProgress(30, '正在调用 AI 识别...');
+
+    const prompt = `你是一个专业的食用菌产量表数据录入助手。请仔细识别这张纸质采收记录表中的所有数据，并以JSON格式返回。
+
+纸质表格的列结构如下（从左到右）：
+- 采收日期
+- 采收时间
+- A级菇平均重抽查(kg/200个)
+- A级菇重量(kg)
+- B级菇重量(kg)
+- C级菇重量(kg)（30-60克）
+- 碰碎菇重量(kg)
+- 过熟菇重量(kg)
+- D级菇重量(kg)
+- 筐数
+- 备注（早出菇等）
+
+表头信息区域可能有：
+- 菇房号（格式如：B4-19、A3-21等）
+- 覆土日期
+- 出菇技术员姓名
+- 污染率、出菇率等
+
+请返回如下JSON格式（数字字段如果识别不清楚用null，不要猜测）：
+{
+  "room_no": "菇房号",
+  "cover_date": "覆土日期",
+  "technician": "技术员",
+  "pollution_rate": 污染率数字或null,
+  "batches": [
+    {
+      "date": "采收日期如5.20",
+      "time": "采收时间",
+      "a_avg_weight": A级平均重量或null,
+      "a_kg": A级重量或null,
+      "b_kg": B级重量数字或null,
+      "c_kg": C级重量数字或null,
+      "broken_kg": 碰碎菇重量数字或null,
+      "overripe_kg": 过熟菇重量数字或null,
+      "d_kg": D级菇重量数字或null,
+      "basket_count": 筐数数字或null,
+      "remark": "备注文字或null"
+    }
+  ],
+  "notes": "整张表的其他补充说明"
+}
+只返回JSON，不要有任何额外的说明文字。`;
+
+    const response = await fetch(`${apiBase}/chat/completions`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: model,
+        messages: [{
+          role: 'user',
+          content: [
+            { type: 'image_url', image_url: { url: `data:image/jpeg;base64,${base64}`, detail: 'high' } },
+            { type: 'text', text: prompt }
+          ]
+        }],
+        max_tokens: 2000,
+        temperature: 0
+      })
+    });
+
+    updateProgress(80, '解析识别结果...');
+
+    if (!response.ok) {
+      const err = await response.json();
+      throw new Error(err.error?.message || `HTTP ${response.status}`);
+    }
+
+    const result = await response.json();
+    let content = result.choices[0].message.content.trim();
+
+    // Strip markdown code block if present
+    content = content.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/```\s*$/i, '').trim();
+
+    recognizedData = JSON.parse(content);
+    updateProgress(100, '识别完成！');
+
+    setTimeout(() => {
+      fillReviewForm(recognizedData);
+      goStep(3);
+    }, 600);
+
+  } catch (err) {
+    console.error(err);
+    alert(`识别失败：${err.message}\n\n请检查：\n1. API Key 是否正确\n2. API 地址是否正确\n3. 网络是否可用`);
+    goStep(1);
+    btn.disabled = false;
+    sp.classList.remove('show');
+  }
+}
+
+function updateProgress(pct, text) {
+  document.getElementById('progressBar').style.width = pct + '%';
+  document.getElementById('progressText').textContent = text;
+}
+
+function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result.split(',')[1]);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+// ─── Fill review form ─────────────────────────────────────────────────────────
+function fillReviewForm(data) {
+  document.getElementById('f_room').value       = data.room_no || '';
+  document.getElementById('f_cover_date').value = data.cover_date || '';
+  document.getElementById('f_tech').value       = data.technician || '';
+  if (data.pollution_rate != null) document.getElementById('f_pollution').value = data.pollution_rate;
+
+  const tbody = document.getElementById('batchBody');
+  tbody.innerHTML = '';
+  (data.batches || []).forEach((b, i) => addBatchRow(b));
+
+  recalcSummary();
+}
+
+function addBatchRow(data = {}) {
+  const tbody = document.getElementById('batchBody');
+  const idx = tbody.rows.length;
+  const tr = document.createElement('tr');
+  tr.innerHTML = `
+    <td><input type="text" value="${data.date || ''}" placeholder="5.20" oninput="recalcSummary()" style="width:72px"></td>
+    <td><input type="number" value="${nvl(data.b_kg)}" placeholder="0" step="0.01" min="0" oninput="recalcSummary()" style="width:80px"></td>
+    <td><input type="number" value="${nvl(data.c_kg)}" placeholder="0" step="0.01" min="0" oninput="recalcSummary()" style="width:80px"></td>
+    <td><input type="number" value="${nvl(data.broken_kg)}" placeholder="0" step="0.01" min="0" oninput="recalcSummary()" style="width:80px"></td>
+    <td><input type="number" value="${nvl(data.overripe_kg)}" placeholder="0" step="0.01" min="0" oninput="recalcSummary()" style="width:80px"></td>
+    <td><input type="number" value="${nvl(data.d_kg)}" placeholder="0" step="0.01" min="0" oninput="recalcSummary()" style="width:80px"></td>
+    <td><input type="number" value="${nvl(data.basket_count)}" placeholder="0" min="0" style="width:54px"></td>
+    <td><button class="btn btn-outline btn-sm" onclick="this.closest('tr').remove();recalcSummary()">删除</button></td>
+  `;
+  tbody.appendChild(tr);
+}
+
+function nvl(v) { return (v == null || v === '') ? '' : v; }
+
+function recalcSummary() {
+  const tbody = document.getElementById('batchBody');
+  let sumB = 0, sumC = 0, sumBroken = 0, sumD = 0;
+  Array.from(tbody.rows).forEach(tr => {
+    const inputs = tr.querySelectorAll('input[type=number]');
+    sumB      += parseFloat(inputs[0]?.value) || 0;
+    sumC      += parseFloat(inputs[1]?.value) || 0;
+    sumBroken += (parseFloat(inputs[2]?.value) || 0) + (parseFloat(inputs[3]?.value) || 0);
+    sumD      += parseFloat(inputs[4]?.value) || 0;
+  });
+  const A = parseFloat(document.getElementById('f_A').value) || 0;
+  const total = A + sumB + sumC + sumBroken + sumD;
+
+  document.getElementById('sum_B').textContent     = sumB.toFixed(2);
+  document.getElementById('sum_C').textContent     = sumC.toFixed(2);
+  document.getElementById('sum_broken').textContent = sumBroken.toFixed(2);
+  document.getElementById('sum_D').textContent     = sumD.toFixed(2);
+  document.getElementById('sum_total').textContent = total.toFixed(2) + ' kg';
+}
+
+document.getElementById('f_A').addEventListener('input', recalcSummary);
+
+// ─── Generate Excel ───────────────────────────────────────────────────────────
+function loadExcel(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    excelWorkbook = XLSX.read(e.target.result, { type: 'binary', cellStyles: true });
+    const sheets = excelWorkbook.SheetNames;
+    const sel = document.getElementById('sheetSelect');
+    sel.innerHTML = sheets.map(s => `<option value="${s}">${s}</option>`).join('');
+    // Auto-select current month
+    const now = new Date();
+    const monthName = (now.getMonth() + 1) + '月份';
+    const match = sheets.find(s => s === monthName);
+    if (match) sel.value = match;
+    showWritePreview();
+  };
+  reader.readAsBinaryString(file);
+}
+
+function getFormData() {
+  // Collect batch data
+  const tbody = document.getElementById('batchBody');
+  let sumB = 0, sumC = 0, sumBroken = 0, sumD = 0;
+  Array.from(tbody.rows).forEach(tr => {
+    const inputs = tr.querySelectorAll('input[type=number]');
+    sumB      += parseFloat(inputs[0]?.value) || 0;
+    sumC      += parseFloat(inputs[1]?.value) || 0;
+    sumBroken += (parseFloat(inputs[2]?.value) || 0) + (parseFloat(inputs[3]?.value) || 0);
+    sumD      += parseFloat(inputs[4]?.value) || 0;
+  });
+  const A     = parseFloat(document.getElementById('f_A').value) || 0;
+  const total = A + sumB + sumC + sumBroken + sumD;
+
+  return {
+    cover_date:  document.getElementById('f_cover_date').value,
+    room_no:     document.getElementById('f_room').value,
+    end_date:    document.getElementById('f_end_date').value,
+    total:       total,
+    a_kg:        A,
+    b_kg:        sumB,
+    c_kg:        sumC,
+    broken_kg:   sumBroken,
+    d_kg:        sumD,
+    pollution:   parseFloat(document.getElementById('f_pollution').value) || 0,
+    moisture:    parseFloat(document.getElementById('f_moisture').value) || null,
+    mite:        document.getElementById('f_mite').value,
+    remark:      document.getElementById('f_remark').value,
+  };
+}
+
+function showWritePreview() {
+  const d = getFormData();
+  const rows = [
+    ['覆土日期', d.cover_date, 'B列'],
+    ['菇房号',   d.room_no,    'C列'],
+    ['收尾日期', d.end_date,   'I列'],
+    ['总产量 kg', d.total.toFixed(2), 'J列'],
+    ['A级 kg (80g+)', d.a_kg.toFixed(2), 'N列'],
+    ['B级 kg (60-80g)', d.b_kg.toFixed(2), 'P列'],
+    ['C级 kg (40-60g)', d.c_kg.toFixed(2), 'R列'],
+    ['碰碎+过熟 kg', d.broken_kg.toFixed(2), 'T列'],
+    ['40g以下 kg', d.d_kg.toFixed(2), 'U列'],
+    ['含水量 %', d.moisture || '—', 'AA列'],
+    ['螨虫/捡出瓶数', d.mite || '—', 'AB列'],
+    ['备注', d.remark || '—', 'AC列'],
+  ];
+  const tbody = document.getElementById('previewBody');
+  tbody.innerHTML = rows.map(r => `<tr><td>${r[0]}</td><td><strong>${r[1]}</strong></td><td style="color:#185fa5">${r[2]}</td></tr>`).join('');
+  document.getElementById('writePreview').style.display = 'block';
+}
+
+function generateExcel() {
+  if (!excelWorkbook) {
+    // Create new workbook from template
+    generateNewExcel();
+    return;
+  }
+  writeToExistingExcel();
+}
+
+function writeToExistingExcel() {
+  const d = getFormData();
+  const sheetName = document.getElementById('sheetSelect').value;
+  const ws = excelWorkbook.Sheets[sheetName];
+  if (!ws) { alert('找不到该Sheet！'); return; }
+
+  // Find first empty row (starting from row 4)
+  let targetRow = 4;
+  while (ws[`C${targetRow}`] && ws[`C${targetRow}`].v) {
+    targetRow++;
+    if (targetRow > 200) break;
+  }
+
+  // Helper: set cell
+  const setCell = (addr, val, type) => {
+    ws[addr] = { v: val, t: type || (typeof val === 'number' ? 'n' : 's') };
+  };
+
+  setCell(`B${targetRow}`, d.cover_date, 's');
+  setCell(`C${targetRow}`, d.room_no, 's');
+  setCell(`H${targetRow}`, 16128, 'n');  // default 覆土瓶数
+  setCell(`I${targetRow}`, d.end_date, 's');
+  setCell(`J${targetRow}`, d.total, 'n');
+  setCell(`N${targetRow}`, d.a_kg, 'n');
+  setCell(`P${targetRow}`, d.b_kg, 'n');
+  setCell(`R${targetRow}`, d.c_kg, 'n');
+  setCell(`T${targetRow}`, d.broken_kg, 'n');
+  setCell(`U${targetRow}`, d.d_kg, 'n');
+  if (d.moisture) setCell(`AA${targetRow}`, d.moisture, 'n');
+  if (d.mite)     setCell(`AB${targetRow}`, d.mite, 's');
+  if (d.remark)   setCell(`AC${targetRow}`, d.remark, 's');
+
+  // Sequence number
+  const prevRow = targetRow - 1;
+  const prevSeq = ws[`A${prevRow}`]?.v;
+  setCell(`A${targetRow}`, typeof prevSeq === 'number' ? prevSeq + 1 : targetRow - 3, 'n');
+
+  // Update sheet range
+  const range = XLSX.utils.decode_range(ws['!ref'] || 'A1:AC4');
+  range.e.r = Math.max(range.e.r, targetRow - 1);
+  ws['!ref'] = XLSX.utils.encode_range(range);
+
+  // Download
+  const buf = XLSX.write(excelWorkbook, { bookType: 'xlsx', type: 'array' });
+  downloadBlob(buf, `产量汇总_${sheetName}_更新.xlsx`);
+
+  showWriteSuccess(targetRow, sheetName);
+}
+
+function generateNewExcel() {
+  const d = getFormData();
+  const sheetName = document.getElementById('sheetSelect').value;
+
+  const wb = XLSX.utils.book_new();
+
+  // Header rows
+  const headers = [
+    ['贞丰厂二期王生金二次出菇产量统计表'],
+    ['序号','覆土日期','菇房号','基质编号','补液方式','选瓶方式','','覆土瓶数','收尾日期','总产量(kg)','实际应有产量(kg)','实验','','总产量-各级','','','','','','','','','出菇率%','污染率%','品质','','','含水量%','螨虫/捡出瓶数','备注'],
+    ['','','','','','正常选 1:1','严选 淘汰率%','','','','','瓶数','产量kg','A级kg 80g+','占%','B级kg 60-80g','占%','C级kg 40-60g','占%','碰碎+过熟kg','40g以下kg','占%','','','菌柄','菌盖','','',''],
+  ];
+
+  const dataRow = [
+    1, d.cover_date, d.room_no, '', '补液棒补液', '正常选', '',
+    16128, d.end_date, d.total, '',
+    '', '', d.a_kg, d.a_kg ? (d.a_kg / d.total * 100).toFixed(1) : 0,
+    d.b_kg, d.b_kg ? (d.b_kg / d.total * 100).toFixed(1) : 0,
+    d.c_kg, d.c_kg ? (d.c_kg / d.total * 100).toFixed(1) : 0,
+    d.broken_kg, d.d_kg, '',
+    '', '', '', '', '', d.moisture || '', d.mite || '', d.remark || ''
+  ];
+  headers.push(dataRow);
+
+  const ws = XLSX.utils.aoa_to_sheet(headers);
+  XLSX.utils.book_append_sheet(wb, ws, sheetName);
+
+  const buf = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+  downloadBlob(buf, `采收产量_${d.room_no}_${d.cover_date}.xlsx`);
+  showWriteSuccess(4, sheetName);
+}
+
+function downloadBlob(buf, filename) {
+  const blob = new Blob([buf], { type: 'application/octet-stream' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  a.click();
+}
+
+function showWriteSuccess(row, sheet) {
+  const div = document.getElementById('writeResult');
+  div.style.display = 'block';
+  div.innerHTML = `<div class="info-box green">
+    写入成功！已添加到「${sheet}」第 ${row} 行。<br>
+    Excel 文件已自动下载到本地，请将其覆盖保存到原汇总文件位置。
+  </div>`;
+}
+
+// Update preview when sheet changes
+document.getElementById('sheetSelect').addEventListener('change', showWritePreview);
+
+// Init preview on step 4
+document.getElementById('step4').addEventListener('click', showWritePreview);
+</script>
+
+
+<!-- PWA Service Worker 注册 -->
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js')
+      .then(reg => {
+        console.log('[PWA] SW registered:', reg.scope);
+        // 检测更新
+        reg.addEventListener('updatefound', () => {
+          const newWorker = reg.installing;
+          newWorker.addEventListener('statechange', () => {
+            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+              // 有新版本，提示用户
+              if (confirm('工具有新版本，是否立即更新？')) {
+                newWorker.postMessage({ action: 'skipWaiting' });
+                window.location.reload();
+              }
+            }
+          });
+        });
+      })
+      .catch(err => console.warn('[PWA] SW failed:', err));
+  });
+}
+
+// 安装提示横幅
+let deferredPrompt = null;
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  deferredPrompt = e;
+  // 显示自定义安装按钮
+  const banner = document.getElementById('install-banner');
+  if (banner) banner.style.display = 'flex';
+});
+
+function installApp() {
+  if (!deferredPrompt) return;
+  deferredPrompt.prompt();
+  deferredPrompt.userChoice.then(result => {
+    console.log('[PWA] Install choice:', result.outcome);
+    deferredPrompt = null;
+    const banner = document.getElementById('install-banner');
+    if (banner) banner.style.display = 'none';
+  });
+}
+
+window.addEventListener('appinstalled', () => {
+  const banner = document.getElementById('install-banner');
+  if (banner) banner.style.display = 'none';
+  console.log('[PWA] App installed!');
+});
+</script>
 </body>
 </html>
+
