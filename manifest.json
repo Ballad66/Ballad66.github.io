@@ -1,0 +1,36 @@
+{
+  "name": "菇房采收工具",
+  "short_name": "菇房工具",
+  "description": "贵州宏臻生物 - 菇房采收产量录入工具，拍照上传纸质记录表，AI自动识别，一键写入汇总Excel",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f5f5f0",
+  "theme_color": "#185fa5",
+  "orientation": "portrait-primary",
+  "lang": "zh-CN",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "新建采收录入",
+      "short_name": "新建录入",
+      "description": "直接打开新建采收录入页面",
+      "url": "/",
+      "icons": [{"src": "icon-192.png", "sizes": "192x192"}]
+    }
+  ],
+  "categories": ["productivity", "business"],
+  "screenshots": []
+}
